@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Birthday Surprise — Single File</title>
+  <style>
+    /* Paste the entire CSS from style.css here */
+    /* (For brevity in this message I'm embedding a working copy) */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html,body,#app { height: 100%; }
+    body {
+      font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background: linear-gradient(180deg, #0f172a 0%, #050406 100%);
+      color: white;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+    .bg-video { position: fixed; inset: 0; width: 100%; height: 100%; object-fit: cover; z-index: 0; opacity: 0.5; }
+    .confetti { z-index: 30; opacity: 0.95; pointer-events: none; }
+    .main-content { position: relative; z-index: 40; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .flow { width: 100%; max-width: 980px; margin: 0 auto; text-align: center; }
+    .step { transition: opacity 0.6s ease, transform 0.6s ease; }
+    .center { display: block; }
+    .hidden { display: none; }
+    .title { font-size: 1.6rem; font-weight: 700; background: linear-gradient(90deg,#f0abfc,#60a5fa); -webkit-background-clip: text; background-clip: text; color: transparent; margin-bottom: 0.6rem; }
+    .big { font-size: 2.4rem; }
+    .subtitle { color: #fda4af; margin-bottom: 0.6rem; }
+    .subtext { opacity: 0.9; margin-bottom: 1rem; }
+    .countdown-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 1rem; margin-top: 1rem; justify-items: center; }
+    .countbox { width: 140px; padding: 1.2rem; border-radius: 12px; box-shadow: 0 8px 30px rgba(0,0,0,0.5); }
+    .countbox .num { font-size: 2.2rem; font-weight: 800; }
+    .countbox .label { margin-top: 0.4rem; opacity: 0.95; }
+    .pink { background: linear-gradient(180deg,#fb7185,#f472b6); color: #fff; }
+    .purple { background: linear-gradient(180deg,#9f7aea,#7c3aed); color: #fff; }
+    .indigo { background: linear-gradient(180deg,#6366f1,#4f46e5); color: #fff; }
+    .blue { background: linear-gradient(180deg,#60a5fa,#3b82f6); color: #fff; }
+    .emoji { font-size: 5rem; margin-bottom: 0.8rem; }
+    .cake { width: 200px; height: auto; margin-bottom: 1rem; }
+    .btn { background: linear-gradient(90deg,#fb7185,#8b5cf6); color: white; padding: .75rem 1.25rem; border-radius: 999px; border: none; font-weight: 700; cursor: pointer; box-shadow: 0 10px 30px rgba(139,92,246,.18); }
+    .btn.big { padding: 0.9rem 1.8rem; font-size: 1rem; }
+    .btn.small { padding: 0.5rem 0.9rem; border-radius: 8px; }
+    .message-tile { width: 320px; background: rgba(255, 203, 211, 0.15); color: #ffe6ef; padding: 1rem; border-radius: 14px; cursor: pointer; box-shadow: 0 8px 20px rgba(0,0,0,0.4); margin: 1rem auto; }
+    .popup-grid { position: fixed; inset:0; z-index:100; display:flex; align-items:center; justify-content:center; }
+    .popup-grid-backdrop { position:absolute; inset:0; background: rgba(0,0,0,0.6); backdrop-filter: blur(6px); }
+    .popup-grid-inner { position:relative; z-index:101; display:grid; grid-template-columns: repeat(2,1fr); gap: 1rem; max-width: 980px; padding: 2rem; }
+    .message-card { background: rgba(255,255,255,0.9); border-radius: 12px; padding: 1.2rem; text-align:center; color:#4c1d95; box-shadow: 0 12px 30px rgba(0,0,0,0.45); }
+    .transition-overlay {
+      position: fixed; inset: 0; background: #000; z-index: 50;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.7s cubic-bezier(.4,0,.2,1);
+    }
+    .transition-overlay.active {
+      opacity: 0.9;
+      pointer-events: auto;
+    }
+    .modal { position: fixed; inset: 0; z-index: 110; display:flex; align-items:center; justify-content:center; }
+    .modal-backdrop { position:absolute; inset:0; background: rgba(0,0,0,0.6); }
+    .modal-card { position:relative; width: 560px; max-width: 92%; background: #fff; color: #5b21b6; border-radius: 20px; padding: 1.3rem; z-index: 111; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+    .modal-close { position:absolute; top:8px; right:12px; background: transparent; border: none; font-size: 1.4rem; color: #fb7185; cursor:pointer; }
+    .modal-letter-text { white-space: pre-wrap; font-family: "Georgia", serif; font-size: 1rem; line-height:1.4; }
+    .letter-card { width: 700px; max-width: 95%; background: rgba(255,255,255,0.06); border-radius: 18px; padding: 1.2rem; box-shadow: 0 20px 50px rgba(0,0,0,0.6); }
+    .letter-inner { min-height: 260px; display:flex; flex-direction:column; align-items:center; justify-content:flex-start; padding: 1rem; background: rgba(255,255,255,0.02); border-radius: 12px; margin-top: 12px; width:100%; }
+    .letter-image { width: 110px; height:auto; margin-bottom: 1rem; }
+    .letter-text { color: #d946ef; font-family: "Georgia", serif; font-size: 1.05rem; text-align:left; width: 100%; padding: 0 1rem; min-height: 180px; }
+    .cursor { display:inline-block; margin-left:4px; color: #fb7185; animation: blink 1s step-start infinite; font-weight:800; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .hidden { display:none !important; }
+    .pulse { animation: pulseAnim 1.5s infinite; }
+    @keyframes pulseAnim { 0%{ transform: scale(1); } 50%{ transform: scale(1.03); } 100%{ transform: scale(1); } }
+    @media (max-width:900px) {
+        .main-content { padding: 0.5rem; }
+        .flow { max-width: 100%; padding: 0 0.5rem; }
+        .countdown-grid { grid-template-columns: repeat(2,1fr); gap: 0.7rem; }
+        .countbox { width: 110px; padding: 0.7rem; font-size: 0.95rem; }
+        .countbox .num { font-size: 1.5rem; }
+        .emoji { font-size: 3rem; }
+        .cake { width: 120px; }
+        .btn.big { padding: 0.7rem 1.1rem; font-size: 0.95rem; }
+        .popup-grid-inner { grid-template-columns: 1fr; padding: 0.5rem; max-width: 100%; }
+        .message-tile { width: 95%; font-size: 0.95rem; }
+        .letter-card { width: 100%; padding: 0.7rem; }
+        .letter-inner { min-height: 160px; padding: 0.5rem; }
+        .letter-image { width: 70px; }
+        .letter-text { font-size: 0.95rem; min-height: 100px; padding: 0 0.3rem; }
+        .modal-card { width: 98%; padding: 0.7rem; }
+        .modal-letter-text { font-size: 0.95rem; }
+      }
+      @media (max-width:600px) {
+        .main-content { padding: 0.2rem; }
+        .flow { padding: 0 0.2rem; }
+        .title { font-size: 1.1rem; }
+        .big { font-size: 1.5rem; }
+        .subtitle { font-size: 1rem; }
+        .countdown-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+        .countbox { width: 95vw; max-width: 320px; padding: 0.5rem; font-size: 0.9rem; }
+        .countbox .num { font-size: 1.2rem; }
+        .emoji { font-size: 2.2rem; }
+        .cake { width: 80px; }
+        .btn.big { padding: 0.5rem 0.7rem; font-size: 0.9rem; }
+        .popup-grid-inner { padding: 0.2rem; }
+        .message-tile { width: 98%; font-size: 0.9rem; }
+        .letter-card { padding: 0.4rem; }
+        .letter-inner { min-height: 80px; padding: 0.2rem; }
+        .letter-image { width: 45px; }
+        .letter-text { font-size: 0.9rem; min-height: 60px; padding: 0 0.1rem; }
+        .modal-card { padding: 0.3rem; }
+        .modal-letter-text { font-size: 0.9rem; }
+      }
+  </style>
+</head>
+<body>
+  <div id="app" class="app">
+    <video id="bgVideo" autoplay loop muted playsinline class="bg-video">
+      <source src="assets/Heart1.mp4" type="video/mp4" />
+    </video>
+    <video id="confettiVideo" autoplay loop muted playsinline class="bg-video confetti hidden">
+      <source src="assets/Confetti.mp4" type="video/mp4" />
+    </video>
+    <div id="transitionOverlay" class="transition-overlay hidden"></div>
+
+    <div id="popupGrid" class="popup-grid hidden" aria-hidden="true">
+      <div class="popup-grid-backdrop" id="popupGridBackdrop"></div>
+      <div class="popup-grid-inner">
+        <div class="message-card">
+          <h3>🌸 Stay Happy</h3>
+          <p>May every moment today bring a smile to your face.</p>
+          <button class="btn" id="closePopupGrid">Close</button>
+        </div>
+        <div class="message-card">
+          <h3>✨ Dream Big</h3>
+          <p>May all your dreams come true and your year be filled with magic and wonder!</p>
+          <button class="btn" id="closePopupGrid2">Close</button>
+        </div>
+        <div class="message-card">
+          <h3>💕 You’re Amazing</h3>
+          <p>Never forget how special you are and how much you mean to everyone around you.</p>
+          <button class="btn" id="closePopupGrid3">Close</button>
+        </div>
+        <div class="message-card">
+          <h3>💫 Adventure Awaits</h3>
+          <p>This year is full of new surprises — go explore, dream, and enjoy every moment!</p>
+          <button class="btn" id="closePopupGrid4">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <main class="main-content">
+      <div id="flow" class="flow">
+        <section id="step1" class="step center">
+          <h1 class="title">Preparing something special</h1>
+          <p class="subtitle">For someone special 💖</p>
+        </section>
+
+        <section id="step2" class="step center hidden">
+          <h1 class="title big">🎂 Birthday Countdown 🎂</h1>
+          <p class="subtext">The magical moment approaches…</p>
+          <div class="countdown-grid" id="countdownGrid">
+            <div class="countbox pink">
+              <div class="num" id="days">0</div>
+              <div class="label">Days</div>
+            </div>
+            <div class="countbox purple">
+              <div class="num" id="hours">0</div>
+              <div class="label">Hours</div>
+            </div>
+            <div class="countbox indigo">
+              <div class="num" id="minutes">0</div>
+              <div class="label">Minutes</div>
+            </div>
+            <div class="countbox blue">
+              <div class="num" id="seconds">0</div>
+              <div class="label">Seconds</div>
+            </div>
+          </div>
+        </section>
+
+        <section id="step3" class="step center hidden">
+          <div class="emoji">🎉</div>
+          <h1 class="title big">Time to Celebrate!</h1>
+          <p class="subtext">The countdown is over... Let's celebrate! 🥳</p>
+          <button class="btn big" id="toStep4">🎁 Let’s Celebrate! ✨</button>
+        </section>
+
+        <section id="step4" class="step center hidden">
+          <img src="assets/cake.png" alt="Cake" class="cake" />
+          <h1 class="title big accent">Happy Birthday!</h1>
+          <h2 class="subtitle">Bala 💕</h2>
+          <p class="subtext">🎉 It's your special day! 🎉</p>
+          <button class="btn big" id="toStep5">Continue the Magic →</button>
+        </section>
+
+        <section id="step5" class="step center hidden">
+          <div class="envelope">💌</div>
+          <h1 class="title big accent-2">Special Messages</h1>
+          <h2 class="subtitle light">For You 💌</h2>
+          <div class="message-tile" id="openMessage">❤️ Tap to open your first message ❤️</div>
+          <button class="btn big" id="toStep6">One last Surprise for you→</button>
+        </section>
+
+        <section id="step6" class="step center hidden full-letter">
+          <div class="letter-card">
+            <div class="letter-top-icons">
+              <span class="heart">❤️</span>
+              <span class="spark">✨</span>
+            </div>
+            <div id="letterInner" class="letter-inner">
+              <img src="assets/letter.png" alt="Letter" class="letter-image pulse" id="letterImage" />
+              <pre id="letterText" class="letter-text"></pre>
+              <div id="letterCursor" class="cursor hidden">|</div>
+            </div>
+            <button class="btn small" id="openLetterPopup">Open in Popup</button>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <div id="letterModal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modal-backdrop" id="modalBackdrop"></div>
+      <div class="modal-card">
+        <button id="closeLetter" class="modal-close">×</button>
+        <div class="modal-body">
+          <pre id="modalLetterText" class="modal-letter-text"></pre>
+          <div id="modalLetterCursor" class="cursor hidden">|</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Inline JS — same as script.js but placed here
+    (function () {
+      const step1 = document.getElementById('step1');
+      const step2 = document.getElementById('step2');
+      const step3 = document.getElementById('step3');
+      const step4 = document.getElementById('step4');
+      const step5 = document.getElementById('step5');
+      const step6 = document.getElementById('step6');
+
+      const transitionOverlay = document.getElementById('transitionOverlay');
+      const confettiVideo = document.getElementById('confettiVideo');
+
+      let currentStep = 1;
+      const targetDate = new Date("2025-10-04T19:37:00").getTime();
+
+      function showStep(n) {
+        [step1, step2, step3, step4, step5, step6].forEach((el) => {
+          if (!el) return;
+          el.classList.add('hidden');
+          el.style.opacity = 0;
+          el.style.transform = 'scale(0.98) translateY(12px)';
+        });
+        const target = [step1, step2, step3, step4, step5, step6][n - 1];
+        if (!target) return;
+        target.classList.remove('hidden');
+        setTimeout(() => {
+          target.style.transition = 'opacity 0.7s cubic-bezier(.4,0,.2,1), transform 0.7s cubic-bezier(.4,0,.2,1)';
+          target.style.opacity = 1;
+          target.style.transform = 'scale(1) translateY(0)';
+        }, 25);
+
+        if (n === 3) confettiVideo.classList.remove('hidden');
+        else confettiVideo.classList.add('hidden');
+
+        currentStep = n;
+      }
+
+      setTimeout(() => transitionTo(2), 3000);
+
+      function transitionTo(stepNumber) {
+        transitionOverlay.classList.remove('hidden');
+        transitionOverlay.classList.add('active');
+        setTimeout(() => {
+          showStep(stepNumber);
+          setTimeout(() => {
+            transitionOverlay.classList.remove('active');
+            setTimeout(() => {
+              transitionOverlay.classList.add('hidden');
+            }, 400);
+          }, 400);
+        }, 700);
+      }
+
+      let countdownInterval = null;
+      function startCountdown() {
+        const elDays = document.getElementById('days');
+        const elHours = document.getElementById('hours');
+        const elMinutes = document.getElementById('minutes');
+        const elSeconds = document.getElementById('seconds');
+        if (countdownInterval) clearInterval(countdownInterval);
+        countdownInterval = setInterval(() => {
+          const now = Date.now();
+          const diff = targetDate - now;
+          if (diff > 0) {
+            const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            const seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+            elDays.textContent = days;
+            elHours.textContent = hours;
+            elMinutes.textContent = minutes;
+            elSeconds.textContent = seconds;
+          } else {
+            clearInterval(countdownInterval);
+            transitionTo(3);
+          }
+        }, 1000);
+      }
+
+      const origShowStep = showStep;
+      showStep = function(n) {
+        origShowStep(n);
+        if (n === 2) startCountdown();
+        if (n === 3) { confettiVideo.play().catch(()=>{}); }
+      };
+
+      document.getElementById('toStep4').addEventListener('click', () => transitionTo(4));
+      document.getElementById('toStep5').addEventListener('click', () => transitionTo(5));
+      document.getElementById('toStep6').addEventListener('click', () => transitionTo(6));
+
+      const popupGrid = document.getElementById('popupGrid');
+      const openMessage = document.getElementById('openMessage');
+      openMessage.addEventListener('click', () => {
+        popupGrid.classList.remove('hidden');
+        popupGrid.setAttribute('aria-hidden', 'false');
+      });
+      ['closePopupGrid','closePopupGrid2','closePopupGrid3','closePopupGrid4'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.addEventListener('click', () => {
+          popupGrid.classList.add('hidden');
+          popupGrid.setAttribute('aria-hidden', 'true');
+        });
+      });
+      document.getElementById('popupGridBackdrop').addEventListener('click', () => {
+        popupGrid.classList.add('hidden');
+        popupGrid.setAttribute('aria-hidden', 'true');
+      });
+
+      const letterText = "Happy Birthday! 💖\nI just want you to know how special you are to me.\nYour smile makes everything better and brighter.\nI wish this year brings you endless happiness and peace.\nKeep shining the way you always do, it inspires me.\nYou’re one of the best parts of my life.\nOnce again, Happy Birthday! Bala 🎉✨";
+
+      const letterTextEl = document.getElementById('letterText');
+      const letterCursor = document.getElementById('letterCursor');
+
+      const modal = document.getElementById('letterModal');
+      const modalBackdrop = document.getElementById('modalBackdrop');
+      const modalLetterText = document.getElementById('modalLetterText');
+      const modalLetterCursor = document.getElementById('modalLetterCursor');
+      const closeLetterBtn = document.getElementById('closeLetter');
+
+      function runTypewriter(targetEl, cursorEl, text, speed = 40, onComplete) {
+        targetEl.textContent = "";
+        cursorEl.classList.remove('hidden');
+        let i = 0;
+        const t = setInterval(() => {
+          i++;
+          targetEl.textContent = text.slice(0, i);
+          if (i >= text.length) {
+            clearInterval(t);
+            cursorEl.classList.add('hidden');
+            if (typeof onComplete === 'function') onComplete();
+          }
+        }, speed);
+        return t;
+      }
+
+      let runningTimer = null;
+      const step6Observer = new MutationObserver(() => {
+        if (!step6.classList.contains('hidden')) {
+          if (runningTimer) clearInterval(runningTimer);
+          runningTimer = runTypewriter(letterTextEl, letterCursor, letterText, 40);
+        }
+      });
+      step6Observer.observe(step6, { attributes: true, attributeFilter: ['class'] });
+
+      document.getElementById('openLetterPopup').addEventListener('click', () => {
+        modal.classList.remove('hidden');
+        modalBackdrop.classList.remove('hidden');
+        modalLetterText.textContent = "";
+        modalLetterCursor.classList.remove('hidden');
+        runTypewriter(modalLetterText, modalLetterCursor, letterText, 40);
+      });
+      function closeModal() {
+        modal.classList.add('hidden');
+        modalBackdrop.classList.add('hidden');
+        modalLetterCursor.classList.add('hidden');
+      }
+      closeLetterBtn.addEventListener('click', closeModal);
+      modalBackdrop.addEventListener('click', closeModal);
+      showStep(1);
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') { closeModal(); popupGrid.classList.add('hidden'); }
+      });
+    })();
+  </script>
+</body>
+</html>
